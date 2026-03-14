@@ -1,0 +1,6 @@
+mysql.connector
+smtplib
+matplotlib.pyplot as plt
+io
+date
+StaticMap
