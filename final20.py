@@ -1,6 +1,5 @@
 import matplotlib
 matplotlib.use('Agg')
-
 import mysql.connector
 import smtplib
 import matplotlib.pyplot as plt
@@ -41,21 +40,166 @@ def contar_eventos(cursor, tabela, id_cliente, inicio, fim):
     cursor.execute(f"""
         SELECT COUNT(*)
         FROM {tabela} t
-        JOIN frotas f ON f.nome = t.grouping
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
         WHERE f.IDcliente = %s
-        AND t.run_id >= %s
-        AND t.run_id < %s
+        AND t.data >= %s
+        AND t.data < %s
     """,(id_cliente,inicio,fim))
 
     valor = cursor.fetchone()[0]
     return valor or 0
 
+def contar_freio(cursor, tabela, id_cliente, inicio, fim):
 
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado< %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+    return valor or 0
+
+def contar_kickdown(cursor, tabela, id_cliente, inicio, fim):
+
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado < %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+    return valor or 0
+def contar_embreagem(cursor, tabela, id_cliente, inicio, fim):
+
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado < %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+    return valor or 0
+
+def contar_velocidade(cursor, tabela, id_cliente, inicio, fim):
+
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado < %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+    return valor or 0
+
+def contar_velocidade_chuva(cursor, tabela, id_cliente, inicio, fim):
+
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado < %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+    return valor or 0
+
+def contar_rpm_vermelho(cursor, tabela, id_cliente, inicio, fim):
+
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado < %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+    return valor or 0
+def contar_rpm_amarelo(cursor, tabela, id_cliente, inicio, fim):
+
+    cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {tabela} t
+        JOIN frotas f
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           t.grouping COLLATE utf8mb4_unicode_ci
+        WHERE f.IDcliente = %s
+        AND t.ativado >= %s
+        AND t.ativado < %s
+    """,(id_cliente,inicio,fim))
+
+    valor = cursor.fetchone()[0]
+
+    return valor or 0
+
+# ===============================
+# FUNÇÕES
+# ===============================
+
+def contar_eventos_dados(cursor, id_cliente, inicio, fim):
+
+    cursor.execute("""
+    SELECT 
+        CASE evento
+            WHEN 0 THEN 'Frenagem Brusca'
+            WHEN 1 THEN 'Aceleração Brusca'
+            WHEN 2 THEN 'Curva Brusca'
+            WHEN 3 THEN 'Curva Brusca'
+            WHEN 4 THEN 'Curva Brusca'
+            WHEN 5 THEN 'Condução Agressiva'
+            ELSE 'Outros'
+        END AS evento_nome,
+        COUNT(*) as total
+    FROM seguranca s
+    JOIN frotas f 
+        ON f.nome COLLATE utf8mb4_unicode_ci =
+           s.grouping COLLATE utf8mb4_unicode_ci
+    WHERE f.IDcliente = %s
+    AND s.data >= %s 
+    AND s.data < %s
+    GROUP BY evento_nome
+    """,(id_cliente, inicio, fim))
+
+    return cursor.fetchall()
+    
+
+    
 # ===============================
 # PERÍODO
 # ===============================
 
-inicio_ultimo_mes = date(2025,12,1)
+
+inicio_ultimo_mes = date(2026,1,1)
 fim_ultimo_mes = date(2026,1,31)
 
 dias_periodo = (fim_ultimo_mes - inicio_ultimo_mes).days
@@ -101,6 +245,35 @@ for cliente_row in clientes:
 
     print("Gerando relatório:", razao_social)
 
+    # ===============================
+    # EVENTOS (DISTRIBUIÇÃO)
+    # ===============================
+    eventos_dist = contar_eventos_dados(
+        cursor,
+        id_cliente,
+        inicio_ultimo_mes,
+        fim_ultimo_mes
+    ) or []
+
+    eventos_dict = {
+        "Frenagem Brusca": 0,
+        "Aceleração Brusca": 0,
+        "Curva Brusca": 0,
+        "Condução Agressiva": 0
+    }
+
+    for nome, total in eventos_dist:
+        if nome in eventos_dict:
+            eventos_dict[nome] += total
+
+    labels = list(eventos_dict.keys())
+    valores = list(eventos_dict.values())
+
+    if sum(valores) == 0:
+        labels = ["Sem eventos"]
+        valores = [1]
+
+
 
 # ===============================
 # VIAGENS
@@ -111,7 +284,9 @@ for cliente_row in clientes:
                SUM(v.quilometragem),
                SUM(v.litros_consumidos)
         FROM viagens v
-        JOIN frotas f ON f.nome = v.grouping
+        JOIN frotas f 
+ON f.nome COLLATE utf8mb4_unicode_ci =
+   v.grouping COLLATE utf8mb4_unicode_ci
         WHERE f.IDcliente = %s
         AND v.inicio >= %s
         AND v.inicio < %s
@@ -127,7 +302,7 @@ for cliente_row in clientes:
 
     if km_total == 0:
         print("Sem dados no período")
-        continue
+        
 
 
 # ===============================
@@ -149,7 +324,9 @@ for cliente_row in clientes:
     cursor.execute("""
         SELECT COUNT(*)
         FROM seguranca s
-        JOIN frotas f ON f.nome = s.grouping
+        JOIN frotas f 
+ON f.nome COLLATE utf8mb4_unicode_ci =
+   s.grouping COLLATE utf8mb4_unicode_ci
         WHERE f.IDcliente = %s
         AND s.data >= %s
         AND s.data < %s
@@ -159,80 +336,38 @@ for cliente_row in clientes:
 
     eventos_100km = round((eventos/km_total)*100,2) if km_total else 0
 
+    
+
+
 # ===============================
-# velocidade 80km
+# VELOCIDADE 80KM
 # ===============================
 
     cursor.execute("""
-        SELECT COUNT(*)
-        FROM velocidade_80km s
-        JOIN frotas f ON f.nome = s.grouping
-        WHERE f.IDcliente = %s
-        AND s.ativado >= %s
-        AND s.ativado < %s
-    """,(id_cliente,inicio_ultimo_mes,fim_ultimo_mes))
+    SELECT COUNT(*)
+    FROM velocidade_80km s
+    JOIN frotas f
+    ON f.nome COLLATE utf8mb4_unicode_ci =
+       s.grouping COLLATE utf8mb4_unicode_ci
+    WHERE f.IDcliente = %s
+    AND s.ativado >= %s
+    AND s.ativado < %s
+""",(id_cliente,inicio_ultimo_mes,fim_ultimo_mes))
 
-    eventos = cursor.fetchone()[0] or 0
-
-    eventos_100km = round((eventos/km_total)*100,2) if km_total else 0
-
+    vel80_eventos = cursor.fetchone()[0] or 0
 
 
 # ===============================
 # EVENTOS DE CONDUÇÃO
 # ===============================
 
-    # ===============================
-# EVENTOS DE CONDUÇÃO
-# ===============================
-
-    freio = contar_eventos(
-        cursor,
-        "freio",
-        id_cliente,
-        inicio_ultimo_mes,
-        fim_ultimo_mes
-    )
-
-    kickdown = contar_eventos(
-        cursor,
-        "kickdown",
-        id_cliente,
-        inicio_ultimo_mes,
-        fim_ultimo_mes
-    )
-
-    rpm_amarelo = contar_eventos(
-        cursor,
-        "rpm_amarelo",
-        id_cliente,
-        inicio_ultimo_mes,
-        fim_ultimo_mes
-    )
-
-    rpm_vermelho = contar_eventos(
-        cursor,
-        "rpm_vermelho",
-        id_cliente,
-        inicio_ultimo_mes,
-        fim_ultimo_mes
-    )
-
-    vel80 = contar_eventos(
-        cursor,
-        "velocidade_80km",
-        id_cliente,
-        inicio_ultimo_mes,
-        fim_ultimo_mes
-    )
-
-    vel60 = contar_eventos(
-        cursor,
-        "velocidade_chuva_60km",
-        id_cliente,
-        inicio_ultimo_mes,
-        fim_ultimo_mes
-    )
+    freio = contar_freio(cursor,"freio",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
+    kickdown = contar_kickdown(cursor,"kickdown",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
+    rpm_amarelo = contar_rpm_amarelo(cursor,"rpm_amarelo",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
+    rpm_vermelho = contar_rpm_vermelho(cursor,"rpm_vermelho",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
+    vel80 = contar_velocidade(cursor,"velocidade_80km",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
+    vel60 = contar_velocidade_chuva(cursor,"velocidade_chuva_60km",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
+    embreagem = contar_embreagem(cursor,"embreagem",id_cliente,inicio_ultimo_mes,fim_ultimo_mes)
 
 
 # ===============================
@@ -240,14 +375,24 @@ for cliente_row in clientes:
 # ===============================
 
     cursor.execute("""
-        SELECT SUM(IFNULL(duracao,0)),
-               SUM(IFNULL(combustivel_gasto,0))
-        FROM ociosidade o
-        JOIN frotas f ON f.nome = o.grouping
-        WHERE f.IDcliente = %s
-        AND o.inicio >= %s
-        AND o.inicio < %s
-    """,(id_cliente,inicio_ultimo_mes,fim_ultimo_mes))
+SELECT 
+    CONCAT(
+        ROUND(SUM(TIME_TO_SEC(IFNULL(duracao,'00:00:00'))) / 3600,2),
+        ' horas'
+    ) AS horas_ociosas,
+    
+    SUM(IFNULL(combustivel_gasto,0)) AS combustivel_ociosidade
+
+FROM ociosidade o
+
+JOIN frotas f 
+ON f.nome COLLATE utf8mb4_unicode_ci =
+   o.grouping COLLATE utf8mb4_unicode_ci
+
+WHERE f.IDcliente = %s
+AND o.ativado >= %s
+AND o.ativado < %s
+""",(id_cliente,inicio_ultimo_mes,fim_ultimo_mes))
 
     ocioso_tempo, combustivel_ocioso = cursor.fetchone()
 
@@ -263,7 +408,9 @@ for cliente_row in clientes:
         SELECT v.grouping,
                SUM(IFNULL(v.quilometragem,0))
         FROM viagens v
-        JOIN frotas f ON f.nome = v.grouping
+        JOIN frotas f 
+ON f.nome COLLATE utf8mb4_unicode_ci =
+   v.grouping COLLATE utf8mb4_unicode_ci
         WHERE f.IDcliente = %s
         AND v.inicio >= %s
         AND v.inicio < %s
@@ -282,40 +429,101 @@ for cliente_row in clientes:
         kms = [0]
 
 
-# ===============================
-# GRÁFICO KM
-# ===============================
-
+    # ===============================
+    # GRÁFICO EVENTOS (CORRETO)
+    # ===============================
     plt.figure(figsize=(6,4))
-    plt.bar(placas,kms,color="#2563eb")
-    plt.title("Top KM por Veículo")
-    plt.ylabel("KM Rodado")
-    plt.xticks(rotation=30)
 
-    buffer_km = io.BytesIO()
-    plt.savefig(buffer_km,format="png",bbox_inches="tight")
+    plt.pie(
+        valores,
+        labels=labels,
+        autopct='%1.1f%%'
+    )
+
+    plt.title("Distribuição de Eventos")
+
+    buffer_eventos = io.BytesIO()
+
+    plt.savefig(buffer_eventos, format="png", bbox_inches="tight")
+
     plt.close()
-    buffer_km.seek(0)
+
+    buffer_eventos.seek(0)
 
 
 # ===============================
 # GRÁFICO EVENTOS
 # ===============================
 
-    labels=["Freio","Kickdown","RPM Amarelo","RPM Vermelho","Vel80","VelChuva"]
-    valores=[freio,kickdown,rpm_amarelo,rpm_vermelho,vel80,vel60]
+    
+# gráfico
+plt.figure(figsize=(6,4))
 
-    if sum(valores)==0:
-        labels=["Sem eventos"]
-        valores=[1]
+plt.pie(valores, labels=labels, autopct='%1.1f%%')
 
-    plt.figure(figsize=(6,4))
-    plt.pie(valores,labels=labels,autopct='%1.1f%%')
+buffer_eventos = io.BytesIO()
 
-    buffer_eventos=io.BytesIO()
-    plt.savefig(buffer_eventos,format="png",bbox_inches="tight")
-    plt.close()
-    buffer_eventos.seek(0)
+plt.savefig(buffer_eventos, format="png", bbox_inches="tight")
+
+plt.close()
+
+buffer_eventos.seek(0)
+
+
+# ===============================
+# TRATAMENTO SEM DADOS
+# ===============================
+
+if sum(valores) == 0:
+    labels = ["Sem eventos"]
+    valores = [1]
+
+
+# ===============================
+# GRÁFICO PIZZA
+# ===============================
+
+plt.figure(figsize=(6,4))
+
+plt.pie(
+    valores,
+    labels=labels,
+    autopct='%1.1f%%'
+)
+
+plt.title("Distribuição de Eventos")
+
+buffer_eventos = io.BytesIO()
+
+plt.savefig(buffer_eventos, format="png", bbox_inches="tight")
+
+plt.close()
+
+buffer_eventos.seek(0)
+# GRÁFICO KM
+plt.figure(figsize=(6,4))
+plt.bar(placas, kms)
+plt.title("Top 5 Veículos por KM")
+buffer_km = io.BytesIO()
+plt.savefig(buffer_km, format="png", bbox_inches="tight")
+plt.close()
+buffer_km.seek(0)
+
+
+# ===============================
+# INSIGHT AUTOMÁTICO 🔥
+# ===============================
+
+if sum(valores) > 0:
+    max_valor = max(valores)
+    idx = valores.index(max_valor)
+
+    top_evento = labels[idx]
+    perc = round((max_valor / sum(valores)) * 100, 1)
+
+    insight_evento = f"O principal evento foi {top_evento}, representando {perc}% do total."
+else:
+    insight_evento = "Não houve eventos registrados no período."
 
 
 # ===============================
@@ -342,7 +550,9 @@ for cliente_row in clientes:
     cursor.execute("""
         SELECT s.coordenadas
         FROM seguranca s
-        JOIN frotas f ON f.nome = s.grouping
+        JOIN frotas f 
+ON f.nome COLLATE utf8mb4_unicode_ci =
+   s.grouping COLLATE utf8mb4_unicode_ci
         WHERE f.IDcliente = %s
         AND s.data >= %s
         AND s.data < %s
@@ -384,165 +594,165 @@ for cliente_row in clientes:
         mapa_html="<p>Sem eventos com coordenadas</p>"
 
 
-# ===============================
-# HTML
-# ===============================
+    # ===============================
+    # HTML
+    # ===============================
 
-    html = f"""
-<body style="font-family:Arial;background:#f4f6f8;padding:30px">
+        html = f"""
+    <body style="font-family:Arial;background:#f4f6f8;padding:30px">
 
-<h1>🚛 Relatório Frota - {razao_social}</h1>
+    <h1>🚛 Relatório Frota - {razao_social}</h1>
 
-<div style="color:#6b7280;font-size:14px;margin-bottom:25px">
-Período: <b>{periodo_relatorio}</b> &nbsp;&nbsp;|&nbsp;&nbsp;
-Comparação: <b>{periodo_comparacao}</b>
-</div>
+    <div style="color:#6b7280;font-size:14px;margin-bottom:25px">
+    Período: <b>{periodo_relatorio}</b> &nbsp;&nbsp;|&nbsp;&nbsp;
+    Comparação: <b>{periodo_comparacao}</b>
+    </div>
 
-<table width="100%" cellspacing="15">
-<tr>
+    <table width="100%" cellspacing="15">
+    <tr>
 
-<td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
-<div style="font-size:12px;color:#cbd5e1">VEÍCULOS</div>
-<div style="font-size:34px;font-weight:bold;margin-top:6px">{veiculos}</div>
-<div style="font-size:14px;color:{cor_variacao(var_veiculos)}">
-{formatar_variacao(var_veiculos)}
-</div>
-</td>
+    <td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
+    <div style="font-size:12px;color:#cbd5e1">VEÍCULOS</div>
+    <div style="font-size:34px;font-weight:bold;margin-top:6px">{veiculos}</div>
+    <div style="font-size:14px;color:{cor_variacao(var_veiculos)}">
+    {formatar_variacao(var_veiculos)}
+    </div>
+    </td>
 
-<td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
-<div style="font-size:12px;color:#cbd5e1">KM RODADOS</div>
-<div style="font-size:34px;font-weight:bold;margin-top:6px">{km_total:,.0f}</div>
-<div style="font-size:14px;color:{cor_variacao(var_km)}">
-{formatar_variacao(var_km)}
-</div>
-</td>
+    <td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
+    <div style="font-size:12px;color:#cbd5e1">KM RODADOS</div>
+    <div style="font-size:34px;font-weight:bold;margin-top:6px">{km_total:,.0f}</div>
+    <div style="font-size:14px;color:{cor_variacao(var_km)}">
+    {formatar_variacao(var_km)}
+    </div>
+    </td>
 
-<td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
-<div style="font-size:12px;color:#cbd5e1">LITROS</div>
-<div style="font-size:34px;font-weight:bold;margin-top:6px">{litros:,.0f}</div>
-<div style="font-size:14px;color:{cor_variacao(var_litros)}">
-{formatar_variacao(var_litros)}
-</div>
-</td>
+    <td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
+    <div style="font-size:12px;color:#cbd5e1">LITROS</div>
+    <div style="font-size:34px;font-weight:bold;margin-top:6px">{litros:,.0f}</div>
+    <div style="font-size:14px;color:{cor_variacao(var_litros)}">
+    {formatar_variacao(var_litros)}
+    </div>
+    </td>
 
-<td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
-<div style="font-size:12px;color:#cbd5e1">EFICIÊNCIA</div>
-<div style="font-size:34px;font-weight:bold;margin-top:6px">{consumo_medio} km/l</div>
-<div style="font-size:14px;color:{cor_variacao(var_consumo)}">
-{formatar_variacao(var_consumo)}
-</div>
-</td>
+    <td width="25%" style="background:#0b0f2b;color:white;padding:22px;border-radius:10px;text-align:center">
+    <div style="font-size:12px;color:#cbd5e1">EFICIÊNCIA</div>
+    <div style="font-size:34px;font-weight:bold;margin-top:6px">{consumo_medio} km/l</div>
+    <div style="font-size:14px;color:{cor_variacao(var_consumo)}">
+    {formatar_variacao(var_consumo)}
+    </div>
+    </td>
 
-</tr>
-</table>
-
-
-<h3 style="margin-top:30px;color:#0b0f2b">Segurança</h3>
-
-<div style="background:white;padding:20px;border-radius:10px">
-
-<div style="font-size:16px">
-Eventos: <b>{eventos}</b>
-<span style="color:{cor_variacao(var_eventos)}">
-({formatar_variacao(var_eventos)})
-</span>
-</div>
-
-<div style="margin-top:8px;font-size:16px">
-Eventos / 100km: <b>{eventos_100km}</b>
-<span style="color:{cor_variacao(var_eventos_100km)}">
-({formatar_variacao(var_eventos_100km)})
-</span>
-</div>
-
-</div>
+    </tr>
+    </table>
 
 
-<h3 style="margin-top:30px;color:#0b0f2b">Eventos de Condução</h3>
+    <h3 style="margin-top:30px;color:#0b0f2b">Segurança</h3>
 
-<div style="background:white;padding:20px;border-radius:10px">
+    <div style="background:white;padding:20px;border-radius:10px">
 
-<table width="100%" style="font-size:15px">
+    <div style="font-size:16px">
+    Eventos: <b>{eventos}</b>
+    <span style="color:{cor_variacao(var_eventos)}">
+    ({formatar_variacao(var_eventos)})
+    </span>
+    </div>
 
-<tr>
-<td>Freio Brusco</td>
-<td align="right"><b>{freio}</b></td>
-</tr>
+    <div style="margin-top:8px;font-size:16px">
+    Eventos / 100km: <b>{eventos_100km}</b>
+    <span style="color:{cor_variacao(var_eventos_100km)}">
+    ({formatar_variacao(var_eventos_100km)})
+    </span>
+    </div>
 
-<tr>
-<td>Kickdown</td>
-<td align="right"><b>{kickdown}</b></td>
-</tr>
-
-<tr>
-<td>RPM Amarelo</td>
-<td align="right"><b>{rpm_amarelo}</b></td>
-</tr>
-
-<tr>
-<td>RPM Vermelho</td>
-<td align="right"><b>{rpm_vermelho}</b></td>
-</tr>
-
-<tr>
-<td>Velocidade &gt; 80km</td>
-<td align="right"><b>{vel80}</b></td>
-</tr>
-
-<tr>
-<td>Velocidade chuva &gt; 60km</td>
-<td align="right"><b>{vel60}</b></td>
-</tr>
-
-</table>
-
-</div>
+    </div>
 
 
-<h3 style="margin-top:30px;color:#0b0f2b">Ociosidade</h3>
+    <h3 style="margin-top:30px;color:#0b0f2b">Eventos de Condução</h3>
 
-<div style="background:white;padding:20px;border-radius:10px">
+    <div style="background:white;padding:20px;border-radius:10px">
 
-<div style="font-size:16px">
-Tempo ocioso: <b>{ocioso_tempo}</b>
-</div>
+    <table width="100%" style="font-size:15px">
 
-<div style="margin-top:8px;font-size:16px">
-Combustível gasto parado: <b>{combustivel_ocioso}</b>
-</div>
+    <tr>
+    <td>Freio Brusco</td>
+    <td align="right"><b>{freio}</b></td>
+    </tr>
 
-</div>
+    <tr>
+    <td>Kickdown</td>
+    <td align="right"><b>{kickdown}</b></td>
+    </tr>
+
+    <tr>
+    <td>RPM Amarelo</td>
+    <td align="right"><b>{rpm_amarelo}</b></td>
+    </tr>
+
+    <tr>
+    <td>RPM Vermelho</td>
+    <td align="right"><b>{rpm_vermelho}</b></td>
+    </tr>
+
+    <tr>
+    <td>Velocidade &gt; 80km</td>
+    <td align="right"><b>{vel80}</b></td>
+    </tr>
+
+    <tr>
+    <td>Velocidade chuva &gt; 60km</td>
+    <td align="right"><b>{vel60}</b></td>
+    </tr>
+
+    </table>
+
+    </div>
 
 
-<h3 style="margin-top:30px;color:#0b0f2b">Mapa de Eventos</h3>
+    <h3 style="margin-top:30px;color:#0b0f2b">Ociosidade</h3>
 
-<div style="background:white;padding:15px;border-radius:10px;text-align:center">
-{mapa_html}
-</div>
+    <div style="background:white;padding:20px;border-radius:10px">
 
+    <div style="font-size:16px">
+    Tempo ocioso: <b>{ocioso_tempo}</b>
+    </div>
 
-<h3 style="margin-top:30px;color:#0b0f2b">Top KM por Placa</h3>
+    <div style="margin-top:8px;font-size:16px">
+    Combustível gasto parado: <b>{combustivel_ocioso}</b>
+    </div>
 
-<div style="background:white;padding:15px;border-radius:10px;text-align:center">
-<img src="cid:grafico_km" style="max-width:100%">
-</div>
-
-
-<h3 style="margin-top:30px;color:#0b0f2b">Distribuição de Eventos</h3>
-
-<div style="background:white;padding:15px;border-radius:10px;text-align:center">
-<img src="cid:grafico_eventos" style="max-width:100%">
-</div>
+    </div>
 
 
-<h3 style="margin-top:30px;color:#0b0f2b">RPM do Motor</h3>
+    <h3 style="margin-top:30px;color:#0b0f2b">Mapa de Eventos</h3>
 
-<div style="background:white;padding:15px;border-radius:10px;text-align:center">
-<img src="cid:grafico_rpm" style="max-width:100%">
-</div>
+    <div style="background:white;padding:15px;border-radius:10px;text-align:center">
+    {mapa_html}
+    </div>
 
-</body>
-"""
+
+    <h3 style="margin-top:30px;color:#0b0f2b">Top KM por Placa</h3>
+
+    <div style="background:white;padding:15px;border-radius:10px;text-align:center">
+    <img src="cid:grafico_km" style="max-width:100%">
+    </div>
+
+
+    <h3 style="margin-top:30px;color:#0b0f2b">Distribuição de Eventos</h3>
+
+    <div style="background:white;padding:15px;border-radius:10px;text-align:center">
+    <img src="cid:grafico_eventos" style="max-width:100%">
+    </div>
+
+
+    <h3 style="margin-top:30px;color:#0b0f2b">RPM do Motor</h3>
+
+    <div style="background:white;padding:15px;border-radius:10px;text-align:center">
+    <img src="cid:grafico_rpm" style="max-width:100%">
+    </div>
+
+    </body>
+    """
 
 
 
@@ -555,29 +765,25 @@ Combustível gasto parado: <b>{combustivel_ocioso}</b>
     destinatario="lucasfarre08@gmail.com"
 
     msg=MIMEMultipart("related")
-
-    msg["Subject"]=f"Relatório Operacional - {razao_social}"
+    msg["Subject"]=f"Relatório - {razao_social}"
     msg["From"]=remetente
     msg["To"]=destinatario
 
     msg.attach(MIMEText(html,"html"))
 
-    graf_km=MIMEImage(buffer_km.read())
-    graf_km.add_header("Content-ID","<grafico_km>")
-    msg.attach(graf_km)
-
-    graf_eventos=MIMEImage(buffer_eventos.read())
-    graf_eventos.add_header("Content-ID","<grafico_eventos>")
-    msg.attach(graf_eventos)
-
-    graf_rpm=MIMEImage(buffer_rpm.read())
-    graf_rpm.add_header("Content-ID","<grafico_rpm>")
-    msg.attach(graf_rpm)
+    for nome,buffer in [
+        ("grafico_km",buffer_km),
+        ("grafico_eventos",buffer_eventos),
+        ("grafico_rpm",buffer_rpm)
+    ]:
+        img=MIMEImage(buffer.read())
+        img.add_header("Content-ID",f"<{nome}>")
+        msg.attach(img)
 
     if buffer_mapa:
-        mapa_img=MIMEImage(buffer_mapa.read())
-        mapa_img.add_header("Content-ID","<mapa_eventos>")
-        msg.attach(mapa_img)
+        img=MIMEImage(buffer_mapa.read())
+        img.add_header("Content-ID","<mapa_eventos>")
+        msg.attach(img)
 
     server=smtplib.SMTP("smtp.gmail.com",587)
     server.starttls()
@@ -586,7 +792,6 @@ Combustível gasto parado: <b>{combustivel_ocioso}</b>
     server.quit()
 
     print("Email enviado:",razao_social)
-
 
 cursor.close()
 conexao.close()
